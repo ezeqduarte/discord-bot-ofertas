@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { addUser, removeUser, getAllUsers } = require('./storage');
 const { createBrowserContext, fetchTweetsWithRetry } = require('./scraper');
 const { buildTweetEmbeds } = require('./embeds');
@@ -49,6 +49,10 @@ const commands = [
                 .setDescription('Handle de Twitter (sin el @)')
                 .setRequired(true)
         ),
+
+    new SlashCommandBuilder()
+        .setName('ayuda')
+        .setDescription('Mostrar todos los comandos disponibles'),
 ];
 
 async function handleCommand(interaction) {
@@ -119,6 +123,45 @@ async function handleCommand(interaction) {
         } finally {
             if (browser) await browser.close();
         }
+    }
+
+    else if (commandName === 'ayuda') {
+        const embed = new EmbedBuilder()
+            .setColor(0x1DA1F2)
+            .setTitle('🤖 Bot de Ofertas — Comandos')
+            .setDescription(
+                'Monitoreo automático de cuentas de Twitter/X. ' +
+                'Cada vez que un usuario monitoreado postea un tweet, el bot lo manda al canal correspondiente.'
+            )
+            .addFields(
+                {
+                    name: '`/agregar <usuario>`',
+                    value: 'Empieza a monitorear una cuenta. El bot va a avisar en el canal donde uses este comando cada vez que esa cuenta tuitee.',
+                },
+                {
+                    name: '`/quitar <usuario>`',
+                    value: 'Deja de monitorear una cuenta y la elimina de la lista.',
+                },
+                {
+                    name: '`/lista`',
+                    value: 'Muestra todas las cuentas que se están monitoreando actualmente.',
+                },
+                {
+                    name: '`/chequear <usuario>`',
+                    value: 'Busca y muestra el último tweet de una cuenta ahora mismo, sin esperar al ciclo automático. Tiene un cooldown de 30s.',
+                },
+                {
+                    name: '`/ayuda`',
+                    value: 'Muestra este mensaje.',
+                },
+                {
+                    name: '⏱️ Frecuencia de chequeo',
+                    value: 'El bot revisa las cuentas monitoreadas cada 5 minutos automáticamente.',
+                }
+            )
+            .setFooter({ text: 'Los tweets se detectan comparando IDs — nunca se manda el mismo dos veces.' });
+
+        await interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     else if (commandName === 'lista') {
