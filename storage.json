@@ -1,3 +1,24 @@
 {
-  "lastTweetId": "2057921487546270122"
+  "users": {
+    "vmenditto": {
+      "lastTweetId": "2057941482384892132",
+      "channelId": "1507448020336377867"
+    },
+    "ahorrotwit": {
+      "lastTweetId": "2057931238007021909",
+      "channelId": "1507448020336377867"
+    },
+    "jefadelahorro": {
+      "lastTweetId": "2057825734186467373",
+      "channelId": "1507448020336377867"
+    },
+    "ahorrandoandoar": {
+      "lastTweetId": "2057937545921499630",
+      "channelId": "1507448020336377867"
+    },
+    "impuestito_org": {
+      "lastTweetId": "2057859416511144335",
+      "channelId": "1507448020336377867"
+    }
+  }
 }

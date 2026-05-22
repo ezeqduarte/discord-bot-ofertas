@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { handleCommand } = require('./commands');
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
@@ -10,6 +11,19 @@ let ready = false;
 client.once('ready', () => {
   console.log(`Bot conectado como ${client.user.tag}`);
   ready = true;
+});
+
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  
+  try {
+    await handleCommand(interaction);
+  } catch (error) {
+    console.error('Error en comando:', error);
+    if (!interaction.replied) {
+      await interaction.reply({ content: '❌ Error ejecutando el comando', ephemeral: true });
+    }
+  }
 });
 
 async function sendTweet(channelId, tweet) {
@@ -23,7 +37,6 @@ async function sendTweet(channelId, tweet) {
 
     const embeds = [];
 
-    // Embed principal con texto, autor, datos
     const mainEmbed = new EmbedBuilder()
       .setColor(0x1DA1F2)
       .setTitle(`🔥 Nueva oferta de ${tweet.authorName}`)
@@ -37,20 +50,17 @@ async function sendTweet(channelId, tweet) {
       .setTimestamp(new Date(tweet.datetime))
       .setFooter({ text: 'Twitter / X' });
 
-    // Primera imagen va en el embed principal
     if (tweet.imageUrls && tweet.imageUrls.length > 0) {
       mainEmbed.setImage(tweet.imageUrls[0]);
     }
 
     embeds.push(mainEmbed);
 
-    // Embeds adicionales para las demás imágenes
-    // Truco: usar la misma URL hace que Discord los agrupe visualmente
     if (tweet.imageUrls && tweet.imageUrls.length > 1) {
       for (let i = 1; i < tweet.imageUrls.length && i < 4; i++) {
         embeds.push(
           new EmbedBuilder()
-            .setURL(tweet.url) // misma URL = se agrupan
+            .setURL(tweet.url)
             .setImage(tweet.imageUrls[i])
         );
       }
