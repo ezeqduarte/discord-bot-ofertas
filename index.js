@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { getLatestTweets } = require('./scraper');
+const { createBrowserContext, getLatestTweets } = require('./scraper');
 const { start, sendTweet, sendAlert } = require('./discord-bot');
 const { getAllUsers, updateLastTweetId } = require('./storage');
 const { setCheckSingleUser } = require('./commands');
@@ -12,12 +12,12 @@ function delay(seconds) {
   return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
 
-async function checkUserTweets(user, sendLatestIfNew = false) {
+async function checkUserTweets(user, context, sendLatestIfNew = false) {
   console.log(`[${new Date().toISOString()}] Revisando @${user.username}...`);
-  
+
   let tweets;
   try {
-    tweets = await getLatestTweets(user.username);
+    tweets = await getLatestTweets(user.username, context);
   } catch (err) {
     if (err.code === 'SESSION_EXPIRED') {
       console.error(`[SESSION] Cookies de Twitter expiradas. El bot no puede scrapear.`);
@@ -74,7 +74,7 @@ async function checkUserTweets(user, sendLatestIfNew = false) {
 
 async function checkAllUsers() {
   const users = getAllUsers();
-  
+
   if (users.length === 0) {
     console.log('No hay usuarios para monitorear. Usá /agregar en Discord.');
     return;
@@ -82,12 +82,17 @@ async function checkAllUsers() {
 
   console.log(`\n=== Revisando ${users.length} usuario(s) ===`);
 
-  for (let i = 0; i < users.length; i++) {
-    await checkUserTweets(users[i]);
-    
-    if (i < users.length - 1) {
-      await delay(DELAY_BETWEEN_USERS_SEC);
+  const { browser, context } = await createBrowserContext();
+  try {
+    for (let i = 0; i < users.length; i++) {
+      await checkUserTweets(users[i], context);
+
+      if (i < users.length - 1) {
+        await delay(DELAY_BETWEEN_USERS_SEC);
+      }
     }
+  } finally {
+    await browser.close();
   }
 }
 
@@ -102,8 +107,13 @@ async function main() {
 async function checkSingleUser(username) {
   const users = getAllUsers();
   const user = users.find(u => u.username === username);
-  if (user) {
-    await checkUserTweets(user, true); // true = mandar último si es primera vez
+  if (!user) return;
+
+  const { browser, context } = await createBrowserContext();
+  try {
+    await checkUserTweets(user, context, true);
+  } finally {
+    await browser.close();
   }
 }
 

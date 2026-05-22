@@ -1,13 +1,12 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 
-async function getLatestTweets(username) {
+async function createBrowserContext() {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
   });
 
-  // Cargar cookies de x.com
   const cookiesData = JSON.parse(fs.readFileSync('./cookies.json', 'utf8'));
   const cookies = cookiesData.map(c => ({
     name: c.name,
@@ -21,6 +20,10 @@ async function getLatestTweets(username) {
   }));
   await context.addCookies(cookies);
 
+  return { browser, context };
+}
+
+async function getLatestTweets(username, context) {
   const page = await context.newPage();
 
   try {
@@ -90,11 +93,12 @@ async function getLatestTweets(username) {
 
     return tweets;
   } catch (error) {
+    if (error.code === 'SESSION_EXPIRED') throw error;
     console.error('Error scrapeando:', error.message);
     return [];
   } finally {
-    await browser.close();
+    await page.close();
   }
 }
 
-module.exports = { getLatestTweets };
+module.exports = { createBrowserContext, getLatestTweets };
