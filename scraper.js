@@ -1,0 +1,74 @@
+const { chromium } = require('playwright');
+const fs = require('fs');
+
+async function getLatestTweets(username) {
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  });
+
+  // Cargar cookies de x.com
+  const cookiesData = JSON.parse(fs.readFileSync('./cookies.json', 'utf8'));
+  const cookies = cookiesData.map(c => ({
+    name: c.name,
+    value: c.value,
+    domain: c.domain,
+    path: c.path || '/',
+    expires: c.expirationDate ? Math.floor(c.expirationDate) : -1,
+    httpOnly: c.httpOnly || false,
+    secure: c.secure || false,
+    sameSite: c.sameSite === 'no_restriction' ? 'None' : (c.sameSite === 'lax' ? 'Lax' : 'Strict')
+  }));
+  await context.addCookies(cookies);
+
+  const page = await context.newPage();
+
+  try {
+    await page.goto(`https://x.com/${username}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForSelector('article', { timeout: 15000 });
+
+    const tweets = await page.evaluate(() => {
+      const articles = document.querySelectorAll('article');
+      const results = [];
+
+      articles.forEach(article => {
+        const isPinned = article.innerText.includes('Pinned') || 
+                         article.innerText.includes('Fijado') ||
+                         article.innerText.includes('Anclado');
+        if (isPinned) return;
+
+        const linkEl = article.querySelector('a[href*="/status/"]');
+        const textEl = article.querySelector('[data-testid="tweetText"]');
+        const timeEl = article.querySelector('time');
+
+        if (linkEl && textEl && timeEl) {
+          const href = linkEl.getAttribute('href');
+          const id = href.split('/status/')[1]?.split('/')[0];
+          const text = textEl.innerText;
+          const datetime = timeEl.getAttribute('datetime');
+
+          if (id) {
+            results.push({ 
+              id, 
+              text, 
+              datetime,
+              url: `https://x.com${href}` 
+            });
+          }
+        }
+      });
+
+      results.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+      return results;
+    });
+
+    return tweets;
+  } catch (error) {
+    console.error('Error scrapeando:', error.message);
+    return [];
+  } finally {
+    await browser.close();
+  }
+}
+
+module.exports = { getLatestTweets };
