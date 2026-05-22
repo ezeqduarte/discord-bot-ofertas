@@ -1,6 +1,7 @@
 const fs = require('fs');
 
 const STORAGE_PATH = './storage.json';
+const STORAGE_TMP = STORAGE_PATH + '.tmp';
 
 function load() {
   if (!fs.existsSync(STORAGE_PATH)) {
@@ -12,7 +13,8 @@ function load() {
 }
 
 function save(data) {
-  fs.writeFileSync(STORAGE_PATH, JSON.stringify(data, null, 2));
+  fs.writeFileSync(STORAGE_TMP, JSON.stringify(data, null, 2));
+  fs.renameSync(STORAGE_TMP, STORAGE_PATH);
 }
 
 function addUser(username, channelId) {
