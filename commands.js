@@ -128,6 +128,13 @@ async function handleCommand(interaction) {
     else if (commandName === 'chequear') {
         const usuario = interaction.options.getString('usuario').replace('@', '').toLowerCase();
 
+        const users = getAllUsers();
+        const monitored = users.find(u => u.username === usuario);
+        if (!monitored) {
+            await interaction.reply({ content: `⚠️ **@${usuario}** no está en la lista de monitoreados. Usá \`/lista\` para ver los disponibles o \`/agregar\` para sumarlo.`, ephemeral: true });
+            return;
+        }
+
         const remaining = getRemainingCooldown(interaction.user.id);
         if (remaining > 0) {
             const segs = Math.ceil(remaining / 1000);
