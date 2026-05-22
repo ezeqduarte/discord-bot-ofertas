@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { getLatestTweets } = require('./scraper');
-const { start, sendTweet } = require('./discord-bot');
+const { start, sendTweet, sendAlert } = require('./discord-bot');
 const { getAllUsers, updateLastTweetId } = require('./storage');
 const { setCheckSingleUser } = require('./commands');
 
@@ -15,7 +15,21 @@ function delay(seconds) {
 async function checkUserTweets(user, sendLatestIfNew = false) {
   console.log(`[${new Date().toISOString()}] Revisando @${user.username}...`);
   
-  const tweets = await getLatestTweets(user.username);
+  let tweets;
+  try {
+    tweets = await getLatestTweets(user.username);
+  } catch (err) {
+    if (err.code === 'SESSION_EXPIRED') {
+      console.error(`[SESSION] Cookies de Twitter expiradas. El bot no puede scrapear.`);
+      await sendAlert(
+        user.channelId,
+        '⚠️ **Las cookies de Twitter expiraron.** El bot dejó de funcionar. Actualizá `cookies.json` y reiniciá.'
+      );
+      process.exit(1);
+    }
+    throw err;
+  }
+
   if (tweets.length === 0) {
     console.log(`  No se encontraron tweets de @${user.username}`);
     return;

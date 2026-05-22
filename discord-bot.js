@@ -77,6 +77,16 @@ async function sendTweet(channelId, tweet) {
   }
 }
 
+async function sendAlert(channelId, message) {
+  if (!ready) return;
+  try {
+    const channel = await client.channels.fetch(channelId);
+    await channel.send(message);
+  } catch (error) {
+    console.error('Error enviando alerta:', error.message);
+  }
+}
+
 async function start() {
   await client.login(process.env.DISCORD_TOKEN);
   await new Promise(resolve => {
@@ -89,4 +99,4 @@ async function start() {
   });
 }
 
-module.exports = { start, sendTweet };
+module.exports = { start, sendTweet, sendAlert };

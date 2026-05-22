@@ -25,6 +25,14 @@ async function getLatestTweets(username) {
 
   try {
     await page.goto(`https://x.com/${username}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+    const currentUrl = page.url();
+    if (currentUrl.includes('/i/flow/login') || currentUrl.includes('login?') || currentUrl.includes('signin')) {
+      const err = new Error('SESSION_EXPIRED');
+      err.code = 'SESSION_EXPIRED';
+      throw err;
+    }
+
     await page.waitForSelector('article', { timeout: 15000 });
 
     const tweets = await page.evaluate(() => {
