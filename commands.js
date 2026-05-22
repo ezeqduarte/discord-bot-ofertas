@@ -1,6 +1,12 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { addUser, removeUser, getAllUsers } = require('./storage');
 
+let checkSingleUser = null;
+
+function setCheckSingleUser(fn) {
+  checkSingleUser = fn;
+}
+
 const commands = [
     new SlashCommandBuilder()
         .setName('agregar')
@@ -35,8 +41,9 @@ async function handleCommand(interaction) {
         addUser(usuario, channelId);
         await interaction.reply(`✅ Empecé a monitorear a **@${usuario}** en este canal. Buscando última oferta...`);
 
-        const { checkSingleUser } = require('./index');
-        checkSingleUser(usuario).catch(err => console.error('Error en check inmediato:', err));
+        if (checkSingleUser) {
+          checkSingleUser(usuario).catch(err => console.error('Error en check inmediato:', err));
+        }
     }
 
     else if (commandName === 'quitar') {
@@ -69,4 +76,4 @@ async function handleCommand(interaction) {
     }
 }
 
-module.exports = { commands, handleCommand };
+module.exports = { commands, handleCommand, setCheckSingleUser };

@@ -2,6 +2,7 @@ require('dotenv').config();
 const { getLatestTweets } = require('./scraper');
 const { start, sendTweet } = require('./discord-bot');
 const { getAllUsers, updateLastTweetId } = require('./storage');
+const { setCheckSingleUser } = require('./commands');
 
 const INTERVAL_MINUTES = 5;
 
@@ -91,6 +92,8 @@ async function checkSingleUser(username) {
     await checkUserTweets(user, true); // true = mandar último si es primera vez
   }
 }
+
+setCheckSingleUser(checkSingleUser);
 
 module.exports = { checkAllUsers, checkSingleUser };
 
