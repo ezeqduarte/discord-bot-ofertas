@@ -9,6 +9,15 @@ function setCheckSingleUser(fn) {
   checkSingleUser = fn;
 }
 
+const CHEQUEAR_COOLDOWN_MS = 30_000;
+const chequearCooldowns = new Map();
+
+function getRemainingCooldown(userId) {
+  const last = chequearCooldowns.get(userId);
+  if (!last) return 0;
+  return Math.max(0, CHEQUEAR_COOLDOWN_MS - (Date.now() - last));
+}
+
 const commands = [
     new SlashCommandBuilder()
         .setName('agregar')
@@ -74,6 +83,14 @@ async function handleCommand(interaction) {
 
     else if (commandName === 'chequear') {
         const usuario = interaction.options.getString('usuario').replace('@', '').toLowerCase();
+
+        const remaining = getRemainingCooldown(interaction.user.id);
+        if (remaining > 0) {
+            const segs = Math.ceil(remaining / 1000);
+            await interaction.reply({ content: `⏳ Esperá ${segs}s antes de volver a usar /chequear.`, ephemeral: true });
+            return;
+        }
+        chequearCooldowns.set(interaction.user.id, Date.now());
 
         await interaction.deferReply();
 
