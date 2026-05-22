@@ -32,14 +32,16 @@ async function getLatestTweets(username) {
       const results = [];
 
       articles.forEach(article => {
-        const isPinned = article.innerText.includes('Pinned') || 
-                         article.innerText.includes('Fijado') ||
-                         article.innerText.includes('Anclado');
+        const isPinned = article.innerText.includes('Pinned') ||
+          article.innerText.includes('Fijado') ||
+          article.innerText.includes('Anclado');
         if (isPinned) return;
 
         const linkEl = article.querySelector('a[href*="/status/"]');
         const textEl = article.querySelector('[data-testid="tweetText"]');
         const timeEl = article.querySelector('time');
+        const imageEls = article.querySelectorAll('[data-testid="tweetPhoto"] img');
+        const authorEl = article.querySelector('[data-testid="User-Name"]');
 
         if (linkEl && textEl && timeEl) {
           const href = linkEl.getAttribute('href');
@@ -47,12 +49,28 @@ async function getLatestTweets(username) {
           const text = textEl.innerText;
           const datetime = timeEl.getAttribute('datetime');
 
+          // Capturar todas las imágenes
+          const imageUrls = Array.from(imageEls)
+            .map(img => img.getAttribute('src'))
+            .filter(Boolean);
+
+          let authorName = 'Usuario';
+          let authorHandle = '';
+          if (authorEl) {
+            const lines = authorEl.innerText.split('\n').filter(l => l.trim());
+            authorName = lines[0] || 'Usuario';
+            authorHandle = lines.find(l => l.startsWith('@')) || '';
+          }
+
           if (id) {
-            results.push({ 
-              id, 
-              text, 
+            results.push({
+              id,
+              text,
               datetime,
-              url: `https://x.com${href}` 
+              imageUrls,
+              authorName,
+              authorHandle,
+              url: `https://x.com${href}`
             });
           }
         }
