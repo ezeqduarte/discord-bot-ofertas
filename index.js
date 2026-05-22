@@ -119,9 +119,13 @@ async function checkAllUsers() {
 async function main() {
   console.log('Iniciando bot...');
   await start();
-  
-  await checkAllUsers();
-  setInterval(checkAllUsers, INTERVAL_MINUTES * 60 * 1000);
+
+  async function loop() {
+    await checkAllUsers();
+    setTimeout(loop, INTERVAL_MINUTES * 60 * 1000);
+  }
+
+  await loop();
 }
 
 async function checkSingleUser(username) {
