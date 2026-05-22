@@ -1,5 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { addUser, removeUser, getAllUsers } = require('./storage');
+const { createBrowserContext, getLatestTweets } = require('./scraper');
+const { buildTweetEmbeds } = require('./discord-bot');
 
 let checkSingleUser = null;
 
@@ -29,6 +31,15 @@ const commands = [
     new SlashCommandBuilder()
         .setName('lista')
         .setDescription('Ver los usuarios monitoreados'),
+
+    new SlashCommandBuilder()
+        .setName('chequear')
+        .setDescription('Ver el último tweet de un usuario ahora mismo')
+        .addStringOption(option =>
+            option.setName('usuario')
+                .setDescription('Handle de Twitter (sin el @)')
+                .setRequired(true)
+        ),
 ];
 
 async function handleCommand(interaction) {
@@ -54,6 +65,38 @@ async function handleCommand(interaction) {
             await interaction.reply(`🗑️ Dejé de monitorear a **@${usuario}**.`);
         } else {
             await interaction.reply(`⚠️ **@${usuario}** no estaba en la lista.`);
+        }
+    }
+
+    else if (commandName === 'chequear') {
+        const usuario = interaction.options.getString('usuario').replace('@', '').toLowerCase();
+
+        await interaction.deferReply();
+
+        let browser, context;
+        try {
+            ({ browser, context } = await createBrowserContext());
+            const tweets = await getLatestTweets(usuario, context);
+
+            if (tweets.length === 0) {
+                await interaction.editReply(`⚠️ No se encontraron tweets de **@${usuario}**. El perfil puede ser privado o no existe.`);
+                return;
+            }
+
+            const tweet = tweets[0];
+            await interaction.editReply({
+                content: `🔍 Último tweet de **@${usuario}**`,
+                embeds: buildTweetEmbeds(tweet)
+            });
+        } catch (err) {
+            if (err.code === 'SESSION_EXPIRED') {
+                await interaction.editReply('⚠️ **Las cookies de Twitter expiraron.** Actualizá `cookies.json` y reiniciá el bot.');
+            } else {
+                console.error(`Error en /chequear @${usuario}:`, err.message);
+                await interaction.editReply(`❌ Error al obtener el tweet de **@${usuario}**.`);
+            }
+        } finally {
+            if (browser) await browser.close();
         }
     }
 
