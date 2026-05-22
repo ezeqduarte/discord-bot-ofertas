@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { addUser, removeUser, getAllUsers } = require('./storage');
 const { createBrowserContext, getLatestTweets } = require('./scraper');
-const { buildTweetEmbeds } = require('./discord-bot');
+const { buildTweetEmbeds } = require('./embeds');
 
 let checkSingleUser = null;
 
