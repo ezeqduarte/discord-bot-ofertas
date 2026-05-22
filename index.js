@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('./logger').init();
 const { createBrowserContext, getLatestTweets } = require('./scraper');
 const { start, sendTweet, sendAlert } = require('./discord-bot');
 const { getAllUsers, updateLastTweetId } = require('./storage');
