@@ -2,6 +2,8 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { addUser, removeUser, getAllUsers } = require('./storage');
 const { createBrowserContext, fetchTweetsWithRetry } = require('./scraper');
 const { buildTweetEmbeds } = require('./embeds');
+const status = require('./status');
+const fs = require('fs');
 
 let checkSingleUser = null;
 
@@ -53,7 +55,45 @@ const commands = [
     new SlashCommandBuilder()
         .setName('ayuda')
         .setDescription('Mostrar todos los comandos disponibles'),
+
+    new SlashCommandBuilder()
+        .setName('estado')
+        .setDescription('Ver el estado actual del bot'),
 ];
+
+function formatDuration(ms) {
+  const totalSecs = Math.floor(ms / 1000);
+  const days = Math.floor(totalSecs / 86400);
+  const hours = Math.floor((totalSecs % 86400) / 3600);
+  const mins = Math.floor((totalSecs % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h ${mins}m`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+
+function getCookieStatus() {
+  try {
+    const cookies = JSON.parse(fs.readFileSync('./cookies.json', 'utf8'));
+    const now = Date.now() / 1000;
+    const WARN_DAYS = 7;
+
+    const expired = cookies.filter(c => c.expirationDate && c.expirationDate < now);
+    const expiringSoon = cookies.filter(c =>
+      c.expirationDate &&
+      c.expirationDate >= now &&
+      c.expirationDate < now + WARN_DAYS * 86400
+    );
+
+    if (expired.length > 0) return { icon: '🔴', text: `${expired.length} cookie(s) expiradas` };
+    if (expiringSoon.length > 0) {
+      const days = Math.floor((expiringSoon[0].expirationDate - now) / 86400);
+      return { icon: '🟡', text: `Expiran en ~${days} días` };
+    }
+    return { icon: '🟢', text: 'Válidas' };
+  } catch {
+    return { icon: '⚪', text: 'No se pudo leer cookies.json' };
+  }
+}
 
 async function handleCommand(interaction) {
     const { commandName } = interaction;
@@ -123,6 +163,37 @@ async function handleCommand(interaction) {
         } finally {
             if (browser) await browser.close();
         }
+    }
+
+    else if (commandName === 'estado') {
+        const uptime = formatDuration(Date.now() - status.getStartTime());
+
+        const lastCycle = status.getLastCycleStart();
+        const lastCycleText = lastCycle
+            ? `Hace ${formatDuration(Date.now() - lastCycle)}`
+            : 'Todavía no corrió';
+
+        const nextCycle = status.getNextCycleAt();
+        const nextCycleText = nextCycle
+            ? `En ${formatDuration(Math.max(0, nextCycle - Date.now()))}`
+            : 'Pendiente...';
+
+        const users = getAllUsers();
+        const cookieStatus = getCookieStatus();
+
+        const embed = new EmbedBuilder()
+            .setColor(0x57F287)
+            .setTitle('📊 Estado del bot')
+            .addFields(
+                { name: '⏱️ Uptime', value: uptime, inline: true },
+                { name: '👥 Usuarios monitoreados', value: `${users.length}`, inline: true },
+                { name: `${cookieStatus.icon} Cookies de Twitter`, value: cookieStatus.text, inline: true },
+                { name: '🕐 Último ciclo', value: lastCycleText, inline: true },
+                { name: '⏭️ Próximo ciclo', value: nextCycleText, inline: true },
+            )
+            .setTimestamp();
+
+        await interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     else if (commandName === 'ayuda') {

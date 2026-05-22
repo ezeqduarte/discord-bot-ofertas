@@ -4,6 +4,7 @@ const { createBrowserContext, getLatestTweets, fetchTweetsWithRetry } = require(
 const { start, sendTweet, sendAlert } = require('./discord-bot');
 const { getAllUsers, updateLastTweetId } = require('./storage');
 const { setCheckSingleUser } = require('./commands');
+const status = require('./status');
 
 const INTERVAL_MINUTES = 5;
 
@@ -105,8 +106,11 @@ async function main() {
   await start();
 
   async function loop() {
+    status.setLastCycleStart(Date.now());
     await checkAllUsers();
-    setTimeout(loop, INTERVAL_MINUTES * 60 * 1000);
+    const next = Date.now() + INTERVAL_MINUTES * 60 * 1000;
+    status.setNextCycleAt(next);
+    setTimeout(loop, next - Date.now());
   }
 
   await loop();
