@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { addUser, removeUser, getAllUsers } = require('./storage');
-const { createBrowserContext, getLatestTweets } = require('./scraper');
+const { createBrowserContext, fetchTweetsWithRetry } = require('./scraper');
 const { buildTweetEmbeds } = require('./embeds');
 
 let checkSingleUser = null;
@@ -80,7 +80,7 @@ async function handleCommand(interaction) {
         let browser, context;
         try {
             ({ browser, context } = await createBrowserContext());
-            const tweets = await getLatestTweets(usuario, context);
+            const tweets = await fetchTweetsWithRetry(usuario, context);
 
             if (tweets.length === 0) {
                 await interaction.editReply(`⚠️ No se encontraron tweets de **@${usuario}**. El perfil puede ser privado o no existe.`);

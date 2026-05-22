@@ -101,4 +101,22 @@ async function getLatestTweets(username, context) {
   }
 }
 
-module.exports = { createBrowserContext, getLatestTweets };
+const SCRAPE_MAX_RETRIES = 2;
+const SCRAPE_RETRY_DELAY_MS = 5000;
+
+async function fetchTweetsWithRetry(username, context) {
+  let lastError;
+  for (let attempt = 1; attempt <= SCRAPE_MAX_RETRIES; attempt++) {
+    try {
+      return await getLatestTweets(username, context);
+    } catch (err) {
+      if (err.code === 'SESSION_EXPIRED') throw err;
+      lastError = err;
+      console.warn(`  [Intento ${attempt}/${SCRAPE_MAX_RETRIES}] Error scrapeando @${username}: ${err.message}`);
+      if (attempt < SCRAPE_MAX_RETRIES) await new Promise(r => setTimeout(r, SCRAPE_RETRY_DELAY_MS));
+    }
+  }
+  throw lastError;
+}
+
+module.exports = { createBrowserContext, getLatestTweets, fetchTweetsWithRetry };

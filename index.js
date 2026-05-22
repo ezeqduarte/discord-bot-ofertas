@@ -1,6 +1,6 @@
 require('dotenv').config();
 require('./logger').init();
-const { createBrowserContext, getLatestTweets } = require('./scraper');
+const { createBrowserContext, getLatestTweets, fetchTweetsWithRetry } = require('./scraper');
 const { start, sendTweet, sendAlert } = require('./discord-bot');
 const { getAllUsers, updateLastTweetId } = require('./storage');
 const { setCheckSingleUser } = require('./commands');
@@ -10,25 +10,9 @@ const INTERVAL_MINUTES = 5;
 const DELAY_BETWEEN_USERS_SEC = 8;
 
 const SCRAPE_MAX_RETRIES = 2;
-const SCRAPE_RETRY_DELAY_SEC = 5;
 
 function delay(seconds) {
   return new Promise(resolve => setTimeout(resolve, seconds * 1000));
-}
-
-async function fetchTweetsWithRetry(username, context) {
-  let lastError;
-  for (let attempt = 1; attempt <= SCRAPE_MAX_RETRIES; attempt++) {
-    try {
-      return await getLatestTweets(username, context);
-    } catch (err) {
-      if (err.code === 'SESSION_EXPIRED') throw err;
-      lastError = err;
-      console.warn(`  [Intento ${attempt}/${SCRAPE_MAX_RETRIES}] Error scrapeando @${username}: ${err.message}`);
-      if (attempt < SCRAPE_MAX_RETRIES) await delay(SCRAPE_RETRY_DELAY_SEC);
-    }
-  }
-  throw lastError;
 }
 
 async function checkUserTweets(user, context, sendLatestIfNew = false) {
