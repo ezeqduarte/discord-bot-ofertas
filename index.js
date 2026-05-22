@@ -8,8 +8,26 @@ const INTERVAL_MINUTES = 5;
 
 const DELAY_BETWEEN_USERS_SEC = 8;
 
+const SCRAPE_MAX_RETRIES = 2;
+const SCRAPE_RETRY_DELAY_SEC = 5;
+
 function delay(seconds) {
   return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+}
+
+async function fetchTweetsWithRetry(username, context) {
+  let lastError;
+  for (let attempt = 1; attempt <= SCRAPE_MAX_RETRIES; attempt++) {
+    try {
+      return await getLatestTweets(username, context);
+    } catch (err) {
+      if (err.code === 'SESSION_EXPIRED') throw err;
+      lastError = err;
+      console.warn(`  [Intento ${attempt}/${SCRAPE_MAX_RETRIES}] Error scrapeando @${username}: ${err.message}`);
+      if (attempt < SCRAPE_MAX_RETRIES) await delay(SCRAPE_RETRY_DELAY_SEC);
+    }
+  }
+  throw lastError;
 }
 
 async function checkUserTweets(user, context, sendLatestIfNew = false) {
@@ -17,7 +35,7 @@ async function checkUserTweets(user, context, sendLatestIfNew = false) {
 
   let tweets;
   try {
-    tweets = await getLatestTweets(user.username, context);
+    tweets = await fetchTweetsWithRetry(user.username, context);
   } catch (err) {
     if (err.code === 'SESSION_EXPIRED') {
       console.error(`[SESSION] Cookies de Twitter expiradas. El bot no puede scrapear.`);
@@ -27,7 +45,8 @@ async function checkUserTweets(user, context, sendLatestIfNew = false) {
       );
       process.exit(1);
     }
-    throw err;
+    console.error(`  Error scrapeando @${user.username} tras ${SCRAPE_MAX_RETRIES} intentos: ${err.message}`);
+    return;
   }
 
   if (tweets.length === 0) {
