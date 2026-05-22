@@ -10,7 +10,7 @@ function buildTweetEmbeds(tweet) {
       iconURL: 'https://abs.twimg.com/favicons/twitter.3.ico',
       url: `https://x.com/${tweet.authorHandle.replace('@', '')}`
     })
-    .setDescription(tweet.text)
+    .setDescription(tweet.text || '📷 *Tweet con imagen*')
     .setTimestamp(new Date(tweet.datetime))
     .setFooter({ text: 'Twitter / X' });
 

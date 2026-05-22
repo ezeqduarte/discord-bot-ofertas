@@ -54,13 +54,13 @@ async function getLatestTweets(username, context) {
         const imageEls = article.querySelectorAll('[data-testid="tweetPhoto"] img');
         const authorEl = article.querySelector('[data-testid="User-Name"]');
 
-        if (linkEl && textEl && timeEl) {
+        const hasContent = textEl || imageEls.length > 0;
+        if (linkEl && timeEl && hasContent) {
           const href = linkEl.getAttribute('href');
           const id = href.split('/status/')[1]?.split('/')[0];
-          const text = textEl.innerText;
+          const text = textEl ? textEl.innerText : '';
           const datetime = timeEl.getAttribute('datetime');
 
-          // Capturar todas las imágenes
           const imageUrls = Array.from(imageEls)
             .map(img => img.getAttribute('src'))
             .filter(Boolean);
