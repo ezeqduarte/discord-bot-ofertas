@@ -20,8 +20,13 @@ function save(data) {
 function addUser(username, channelId) {
   const data = load();
   username = username.toLowerCase().replace('@', '');
-  data.users[username] = { lastTweetId: null, channelId };
+  const existing = data.users[username];
+  data.users[username] = {
+    lastTweetId: existing ? existing.lastTweetId : null,
+    channelId
+  };
   save(data);
+  return { alreadyExisted: !!existing };
 }
 
 function removeUser(username) {

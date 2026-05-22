@@ -49,11 +49,15 @@ async function handleCommand(interaction) {
         const usuario = interaction.options.getString('usuario').replace('@', '').toLowerCase();
         const channelId = interaction.channelId;
 
-        addUser(usuario, channelId);
-        await interaction.reply(`✅ Empecé a monitorear a **@${usuario}** en este canal. Buscando última oferta...`);
+        const { alreadyExisted } = addUser(usuario, channelId);
 
-        if (checkSingleUser) {
-          checkSingleUser(usuario).catch(err => console.error('Error en check inmediato:', err));
+        if (alreadyExisted) {
+          await interaction.reply(`⚠️ **@${usuario}** ya estaba siendo monitoreado. Actualicé el canal a este.`);
+        } else {
+          await interaction.reply(`✅ Empecé a monitorear a **@${usuario}** en este canal. Buscando última oferta...`);
+          if (checkSingleUser) {
+            checkSingleUser(usuario).catch(err => console.error('Error en check inmediato:', err));
+          }
         }
     }
 
