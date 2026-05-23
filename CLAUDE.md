@@ -10,31 +10,37 @@ node index.js
 
 Requiere antes:
 1. Crear `.env` con las variables de entorno (ver abajo)
-2. Tener `cookies.json` con sesión activa de Twitter/X
-3. Registrar los slash commands una sola vez: `node deploy-commands.js`
+2. Registrar los slash commands una sola vez: `node deploy-commands.js`
 
 ## Variables de entorno (.env)
 
 ```
-DISCORD_TOKEN=   # Token del bot de Discord
-CHANNEL_ID=      # Canal Discord por defecto
-CLIENT_ID=       # ID de la aplicación Discord
-GUILD_ID=        # ID del servidor Discord
+DISCORD_TOKEN=      # Token del bot de Discord
+CHANNEL_ID=         # Canal Discord por defecto
+CLIENT_ID=          # ID de la aplicación Discord
+GUILD_ID=           # ID del servidor Discord
+TWITTER_COOKIES=    # JSON string con las cookies de sesión de Twitter/X
 ```
 
 ## Arquitectura de archivos
 
-| Archivo | Responsabilidad |
-|---------|----------------|
-| `index.js` | Loop principal (ciclo cada 5 min), orquestador general |
-| `scraper.js` | Playwright/Chromium, scraping de tweets, retry logic |
-| `discord-bot.js` | Cliente Discord, envío de mensajes y embeds |
-| `commands.js` | Handlers de los 6 slash commands |
-| `embeds.js` | Formato de tweets como Discord EmbedBuilder |
-| `storage.js` | CRUD sobre `storage.json`, escritura atómica |
-| `status.js` | Estado en memoria: uptime, ciclos, timestamps |
-| `logger.js` | Logging a `logs/bot.log` con rotación (5MB) |
-| `deploy-commands.js` | Script one-time para registrar commands en Discord |
+```
+index.js                  # Loop principal (ciclo cada 5 min), orquestador general
+deploy-commands.js        # Script one-time para registrar commands en Discord
+src/
+  discord/
+    client.js             # Cliente Discord, envío de mensajes y embeds
+    commands.js           # Handlers de los 6 slash commands
+    embeds.js             # Formato de tweets como Discord EmbedBuilder
+  scraper/
+    index.js              # Playwright/Chromium, scraping de tweets, retry logic
+  storage/
+    index.js              # CRUD sobre storage.json, escritura atómica
+  utils/
+    logger.js             # Logging a logs/bot.log con rotación (5MB)
+    status.js             # Estado en memoria: uptime, ciclos, timestamps
+    username.js           # Validación y normalización de usernames de Twitter
+```
 
 ## Schema de datos (storage.json)
 
