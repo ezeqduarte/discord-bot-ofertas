@@ -19,18 +19,20 @@ DISCORD_TOKEN=      # Token del bot de Discord
 CHANNEL_ID=         # Canal Discord por defecto
 CLIENT_ID=          # ID de la aplicación Discord
 GUILD_ID=           # ID del servidor Discord
-TWITTER_COOKIES=    # JSON string con las cookies de sesión de Twitter/X
+TWITTER_COOKIES=    # JSON con las cookies de sesión de Twitter/X (array de objetos)
 ```
+
+`TWITTER_COOKIES` debe ser el contenido JSON del archivo de cookies de Twitter exportado con una extensión de browser (ej. "EditThisCookie"). El scraper lee esta variable al iniciar cada sesión de Playwright.
 
 ## Arquitectura de archivos
 
 ```
 index.js                  # Loop principal (ciclo cada 5 min), orquestador general
-deploy-commands.js        # Script one-time para registrar commands en Discord
+deploy-commands.js         # Script one-time para registrar commands en Discord
 src/
   discord/
     client.js             # Cliente Discord, envío de mensajes y embeds
-    commands.js           # Handlers de los 6 slash commands
+    commands.js           # Handlers de los 6 slash commands + definiciones
     embeds.js             # Formato de tweets como Discord EmbedBuilder
   scraper/
     index.js              # Playwright/Chromium, scraping de tweets, retry logic
@@ -39,7 +41,7 @@ src/
   utils/
     logger.js             # Logging a logs/bot.log con rotación (5MB)
     status.js             # Estado en memoria: uptime, ciclos, timestamps
-    username.js           # Validación y normalización de usernames de Twitter
+    username.js           # parseUsername(): normaliza y valida handles de Twitter
 ```
 
 ## Schema de datos (storage.json)
@@ -59,10 +61,10 @@ src/
 
 | Comando | Descripción |
 |---------|-------------|
-| `/agregar <usuario>` | Inicia monitoreo de una cuenta Twitter |
+| `/agregar <usuario>` | Inicia monitoreo de una cuenta Twitter; hace un check inmediato y manda el último tweet como bienvenida |
 | `/quitar <usuario>` | Elimina cuenta del monitoreo |
-| `/lista` | Lista todas las cuentas monitoreadas |
-| `/chequear <usuario>` | Chequeo manual del último tweet (cooldown 30s) |
+| `/lista` | Lista todas las cuentas monitoreadas con link al perfil |
+| `/chequear <usuario>` | Chequeo manual del último tweet (solo para usuarios ya monitoreados, cooldown 30s) |
 | `/estado` | Estado del bot: uptime, cookies, próximo ciclo |
 | `/ayuda` | Documentación de todos los comandos |
 
@@ -74,10 +76,11 @@ Estos patrones están implementados y no deben romperse:
 - **Retry scraping**: 2 reintentos automáticos con 5s de delay ante fallos
 - **Delay entre usuarios**: 8 segundos para evitar rate limiting de Twitter
 - **Cooldown /chequear**: 30 segundos por usuario para evitar spam
-- **Normalización de usernames**: siempre lowercase, siempre sin `@`
+- **Normalización de usernames**: `parseUsername()` en `src/utils/username.js` — siempre lowercase, sin `@`, rechaza cualquier formato inválido (solo `[a-zA-Z0-9_]`, máx 15 chars)
 - **Escritura atómica en storage**: escribir en archivo temp → renombrar (evita corrupción)
-- **Cookie expiry**: mostrar estado en `/estado` con indicadores 🔴🟡🟢 (expirada/pronto/válida)
-- **Filtrar pinned tweets**: nunca notificar tweets fijados al perfil
+- **Cookie expiry**: mostrar estado en `/estado` con indicadores 🔴🟡🟢 (expirada/pronto/válida); warning en 7 días
+- **Filtrar pinned tweets**: nunca notificar tweets fijados al perfil (detecta "Pinned", "Fijado", "Anclado")
+- **Session expired**: si el scraper detecta redirect a login, lanza error `SESSION_EXPIRED` que detiene el bot y manda alerta a Discord
 
 ## Estándares de código
 
@@ -85,7 +88,7 @@ Estos patrones están implementados y no deben romperse:
 - No usar `console.log` directo — usar el sistema de `logger.js` (ya intercepta console)
 - Cada módulo exporta funciones específicas; `index.js` es el único orquestador
 - Errores de scraping se loguean como warnings y continúan — no detienen el ciclo
-- Expiración de cookies sí detiene el bot y manda alerta a Discord antes de salir
+- Expiración de cookies (`SESSION_EXPIRED`) sí detiene el bot y manda alerta a Discord antes de salir
 
 ## Restricciones del proyecto
 
@@ -93,4 +96,4 @@ Estos patrones están implementados y no deben romperse:
 - **Sin framework backend**: Node.js puro, sin Express ni similar
 - **Sin testing framework**: no hay tests; no proponer agregar Jest u otros sin consultarlo
 - **Sin Telegram**: el bot es exclusivamente Discord
-- **Twitter vía scraping**: no hay API key de Twitter/X, acceso solo por cookies de sesión
+- **Twitter vía scraping**: no hay API key de Twitter/X, acceso solo por cookies de sesión en `TWITTER_COOKIES`

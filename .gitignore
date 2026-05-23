@@ -18,3 +18,4 @@ logs/
 cookies.json
 storage.json
 .claude/
+worktrees
