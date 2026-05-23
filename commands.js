@@ -73,7 +73,9 @@ function formatDuration(ms) {
 
 function getCookieStatus() {
   try {
-    const cookies = JSON.parse(fs.readFileSync('./cookies.json', 'utf8'));
+    const cookiesRaw = process.env.TWITTER_COOKIES;
+    if (!cookiesRaw) throw new Error('TWITTER_COOKIES no definida');
+    const cookies = JSON.parse(cookiesRaw);
     const now = Date.now() / 1000;
     const WARN_DAYS = 7;
 
@@ -91,7 +93,7 @@ function getCookieStatus() {
     }
     return { icon: '🟢', text: 'Válidas' };
   } catch {
-    return { icon: '⚪', text: 'No se pudo leer cookies.json' };
+    return { icon: '⚪', text: 'No se pudo leer TWITTER_COOKIES' };
   }
 }
 
@@ -162,7 +164,7 @@ async function handleCommand(interaction) {
             });
         } catch (err) {
             if (err.code === 'SESSION_EXPIRED') {
-                await interaction.editReply('⚠️ **Las cookies de Twitter expiraron.** Actualizá `cookies.json` y reiniciá el bot.');
+                await interaction.editReply('⚠️ **Las cookies de Twitter expiraron.** Actualizá la variable `TWITTER_COOKIES` y reiniciá el bot.');
             } else {
                 console.error(`Error en /chequear @${usuario}:`, err.message);
                 await interaction.editReply(`❌ Error al obtener el tweet de **@${usuario}**.`);

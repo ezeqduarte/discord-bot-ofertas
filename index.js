@@ -27,7 +27,7 @@ async function checkUserTweets(user, context, sendLatestIfNew = false) {
       console.error(`[SESSION] Cookies de Twitter expiradas. El bot no puede scrapear.`);
       await sendAlert(
         user.channelId,
-        '⚠️ **Las cookies de Twitter expiraron.** El bot dejó de funcionar. Actualizá `cookies.json` y reiniciá.'
+        '⚠️ **Las cookies de Twitter expiraron.** El bot dejó de funcionar. Actualizá la variable `TWITTER_COOKIES` y reiniciá.'
       );
       process.exit(1);
     }

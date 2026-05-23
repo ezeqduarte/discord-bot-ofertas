@@ -7,7 +7,9 @@ async function createBrowserContext() {
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
   });
 
-  const cookiesData = JSON.parse(fs.readFileSync('./cookies.json', 'utf8'));
+  const cookiesRaw = process.env.TWITTER_COOKIES;
+  if (!cookiesRaw) throw new Error('La variable de entorno TWITTER_COOKIES no está definida.');
+  const cookiesData = JSON.parse(cookiesRaw);
   const cookies = cookiesData.map(c => ({
     name: c.name,
     value: c.value,
