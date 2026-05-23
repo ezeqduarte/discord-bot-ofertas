@@ -97,11 +97,23 @@ function getCookieStatus() {
   }
 }
 
+const VALID_USERNAME = /^[a-zA-Z0-9_]{1,15}$/;
+
+function parseUsername(raw) {
+  const username = raw.replace('@', '').toLowerCase().trim();
+  if (!VALID_USERNAME.test(username)) return null;
+  return username;
+}
+
 async function handleCommand(interaction) {
     const { commandName } = interaction;
 
     if (commandName === 'agregar') {
-        const usuario = interaction.options.getString('usuario').replace('@', '').toLowerCase();
+        const usuario = parseUsername(interaction.options.getString('usuario'));
+        if (!usuario) {
+          await interaction.reply({ content: '⚠️ Nombre de usuario inválido. Solo letras, números y `_`, máximo 15 caracteres.', ephemeral: true });
+          return;
+        }
         const channelId = interaction.channelId;
 
         const { alreadyExisted } = addUser(usuario, channelId);
@@ -117,7 +129,11 @@ async function handleCommand(interaction) {
     }
 
     else if (commandName === 'quitar') {
-        const usuario = interaction.options.getString('usuario').replace('@', '').toLowerCase();
+        const usuario = parseUsername(interaction.options.getString('usuario'));
+        if (!usuario) {
+          await interaction.reply({ content: '⚠️ Nombre de usuario inválido.', ephemeral: true });
+          return;
+        }
         const removed = removeUser(usuario);
 
         if (removed) {
@@ -128,7 +144,11 @@ async function handleCommand(interaction) {
     }
 
     else if (commandName === 'chequear') {
-        const usuario = interaction.options.getString('usuario').replace('@', '').toLowerCase();
+        const usuario = parseUsername(interaction.options.getString('usuario'));
+        if (!usuario) {
+          await interaction.reply({ content: '⚠️ Nombre de usuario inválido.', ephemeral: true });
+          return;
+        }
 
         const users = getAllUsers();
         const monitored = users.find(u => u.username === usuario);
