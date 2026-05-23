@@ -1,10 +1,10 @@
 require('dotenv').config();
-require('./logger').init();
-const { createBrowserContext, getLatestTweets, fetchTweetsWithRetry } = require('./scraper');
-const { start, sendTweet, sendAlert } = require('./discord-bot');
-const { getAllUsers, updateLastTweetId } = require('./storage');
-const { setCheckSingleUser } = require('./commands');
-const status = require('./status');
+require('./src/utils/logger').init();
+const { createBrowserContext, fetchTweetsWithRetry } = require('./src/scraper');
+const { start, sendTweet, sendAlert } = require('./src/discord/client');
+const { getAllUsers, updateLastTweetId } = require('./src/storage');
+const { setCheckSingleUser } = require('./src/discord/commands');
+const status = require('./src/utils/status');
 
 const INTERVAL_MINUTES = 5;
 

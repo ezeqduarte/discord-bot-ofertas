@@ -1,9 +1,9 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { addUser, removeUser, getAllUsers } = require('./storage');
-const { createBrowserContext, fetchTweetsWithRetry } = require('./scraper');
+const { addUser, removeUser, getAllUsers } = require('../storage');
+const { createBrowserContext, fetchTweetsWithRetry } = require('../scraper');
 const { buildTweetEmbeds } = require('./embeds');
-const status = require('./status');
-const fs = require('fs');
+const { parseUsername } = require('../utils/username');
+const status = require('../utils/status');
 
 let checkSingleUser = null;
 
@@ -95,14 +95,6 @@ function getCookieStatus() {
   } catch {
     return { icon: '⚪', text: 'No se pudo leer TWITTER_COOKIES' };
   }
-}
-
-const VALID_USERNAME = /^[a-zA-Z0-9_]{1,15}$/;
-
-function parseUsername(raw) {
-  const username = raw.replace('@', '').toLowerCase().trim();
-  if (!VALID_USERNAME.test(username)) return null;
-  return username;
 }
 
 async function handleCommand(interaction) {
@@ -278,7 +270,7 @@ async function handleCommand(interaction) {
 
         await interaction.reply({
             content: `📋 **Usuarios monitoreados:**\n${lista}`,
-            flags: 4 
+            flags: 4
         });
     }
 }

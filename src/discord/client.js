@@ -1,4 +1,3 @@
-require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const { handleCommand } = require('./commands');
 const { buildTweetEmbeds } = require('./embeds');
@@ -16,7 +15,7 @@ client.once('ready', () => {
 
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-  
+
   try {
     await handleCommand(interaction);
   } catch (error) {
